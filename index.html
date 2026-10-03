@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Mandlebrot viewer</title>
+</head>
+
+<body>
+  <small>Click + drag to pan, scroll to zoom</small><br>
+  <canvas id="mc" width=600 height=500 style="border: 3px solid black;"></canvas>
+  <script>
+    let cx = [-1.9, 0.5];
+    let cy = [-1, 1];
+    const canvas = document.getElementById('mc');
+    const ctx = canvas.getContext('2d');
+    function draw(xmin, xmax, ymin, ymax) {
+      const WIDTH = canvas.width;
+      const HEIGHT = canvas.height;
+      let imdata = ctx.createImageData(Math.floor(WIDTH), Math.floor(HEIGHT));
+      let data = imdata.data;
+      for (let i = 0; i < HEIGHT; ++i) {
+        for (let j = 0; j < WIDTH; ++j) {
+          const currpt = [xmin + j / WIDTH * (xmax - xmin), ymin + i / HEIGHT * (ymax - ymin)];
+          let zpt = [0.0, 0.0];
+          let valid = true;
+          for (let k = 0; k < 100; ++k) {
+            zpt = [zpt[0] * zpt[0] - zpt[1] * zpt[1] + currpt[0], 2 * zpt[0] * zpt[1] + currpt[1]];
+            if (zpt[0] * zpt[0] + zpt[1] * zpt[1] > 10.0) {
+              valid = false;
+              break;
+            }
+          }
+          let idx = (i * WIDTH + j) * 4;
+          if (valid) {
+            data[idx] = 0;
+            data[idx + 1] = 0;
+            data[idx + 2] = 0;
+            data[idx + 3] = 255;
+          }
+        }
+      }
+      ctx.putImageData(imdata, 0, 0);
+    }
+    draw(cx[0], cx[1], cy[0], cy[1]);
+    function getMousePos(evt) {
+      var rect = canvas.getBoundingClientRect();
+      return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+      };
+    }
+    canvas.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      const pos = [e.clientX - r.left, e.clientY - r.top];
+      const scrollamt = 1 + e.deltaY / 1000;
+      const truepos = [pos[0] / r.width * (cx[1] - cx[0]), pos[1] / r.height * (cy[1] - cy[0])];
+      cx = [cx[0] + truepos[0] - truepos[0] * scrollamt,
+      cx[0] + truepos[0] + (cx[1] - cx[0]) * scrollamt - truepos[0] * scrollamt];
+      cy = [cy[0] + truepos[1] - truepos[1] * scrollamt,
+      cy[0] + truepos[1] + (cy[1] - cy[0]) * scrollamt - truepos[1] * scrollamt];
+      draw(cx[0], cx[1], cy[0], cy[1]);
+    }, { passive: false });
+    let isdrag = false;
+    let lastpos = { x: 0.0, y: 0.0 };
+    canvas.addEventListener('mousedown', function (e) {
+      isdrag = true;
+      lastpos = getMousePos(e);
+    });
+    canvas.addEventListener('mousemove', function (e) {
+      if (isdrag) {
+        const mouse = getMousePos(e);
+        cx = [cx[0] - (mouse.x - lastpos.x) / canvas.width * (cx[1] - cx[0]), cx[1] - (mouse.x - lastpos.x) / canvas.width * (cx[1] - cx[0])];
+        cy = [cy[0] - (mouse.y - lastpos.y) / canvas.height * (cy[1] - cy[0]), cy[1] - (mouse.y - lastpos.y) / canvas.height * (cy[1] - cy[0])];
+        lastpos = mouse;
+        draw(cx[0], cx[1], cy[0], cy[1]);
+      }
+    })
+    canvas.addEventListener('mouseup', () => { isdrag = false });
+    canvas.addEventListener('mouseleave', () => { isdrag = false });
+  </script>
+</body>
+
+</html>
