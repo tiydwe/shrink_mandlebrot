@@ -2,7 +2,7 @@
 <html>
 
 <head>
-  <title>Mandlebrot viewer</title>
+  <title>Mandelbrot viewer</title>
 </head>
 
 <body>
@@ -11,6 +11,14 @@
   <script>
     let cx = [-1.9, 0.5];
     let cy = [-1, 1];
+    function hslToRgb(h, s, l) {
+      s /= 100;
+      l /= 100;
+      const k = n => (n + h / 30) % 12;
+      const a = s * Math.min(l, 1 - l);
+      const f = n => l - a * Math.max(-1, Math.min(k(n) - 3, Math.min(9 - k(n), 1)));
+      return [Math.round(255 * f(0)), Math.round(255 * f(8)), Math.round(255 * f(4))];
+    }
     const canvas = document.getElementById('mc');
     const ctx = canvas.getContext('2d');
     function draw(xmin, xmax, ymin, ymax) {
@@ -23,10 +31,13 @@
           const currpt = [xmin + j / WIDTH * (xmax - xmin), ymin + i / HEIGHT * (ymax - ymin)];
           let zpt = [0.0, 0.0];
           let valid = true;
-          for (let k = 0; k < 100; ++k) {
+          let endk = -1;
+          const MAX_IT = 100;
+          for (let k = 0; k < MAX_IT; ++k) {
             zpt = [zpt[0] * zpt[0] - zpt[1] * zpt[1] + currpt[0], 2 * zpt[0] * zpt[1] + currpt[1]];
             if (zpt[0] * zpt[0] + zpt[1] * zpt[1] > 10.0) {
               valid = false;
+              endk = k;
               break;
             }
           }
@@ -35,6 +46,13 @@
             data[idx] = 0;
             data[idx + 1] = 0;
             data[idx + 2] = 0;
+            data[idx + 3] = 255;
+          }
+          else{
+            const color = hslToRgb(endk / MAX_IT * 360, 100, 50);
+            data[idx] = color[0];
+            data[idx + 1] = color[1];
+            data[idx + 2] = color[2];
             data[idx + 3] = 255;
           }
         }
