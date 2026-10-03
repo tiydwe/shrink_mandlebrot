@@ -6,11 +6,18 @@
 </head>
 
 <body>
+  <button onclick="reset()">Reset zoom</button><br>
   <small>Click + drag to pan, scroll to zoom</small><br>
-  <canvas id="mc" width=600 height=500 style="border: 3px solid black;"></canvas>
+  <canvas id="mc" width=600 height=500 style="border: 3px solid black;"></canvas><br>
+  <small><a href="https://github.com/tiydwe/shrink_mandlebrot">Github Repo</a></small>
   <script>
-    let cx = [-1.9, 0.5];
-    let cy = [-1, 1];
+    let p = [-1.9, 0.5];
+    let q = [-1, 1];
+    function reset(){
+      p = [-1.9, 0.5];
+      q = [-1, 1];
+      draw(p[0], p[1], q[0], q[1]);
+    }
     function hslToRgb(h, s, l) {
       s /= 100;
       l /= 100;
@@ -22,20 +29,19 @@
     const canvas = document.getElementById('mc');
     const ctx = canvas.getContext('2d');
     function draw(xmin, xmax, ymin, ymax) {
-      const WIDTH = canvas.width;
-      const HEIGHT = canvas.height;
+      let WIDTH = canvas.width,HEIGHT = canvas.height;
       let imdata = ctx.createImageData(Math.floor(WIDTH), Math.floor(HEIGHT));
       let data = imdata.data;
       for (let i = 0; i < HEIGHT; ++i) {
         for (let j = 0; j < WIDTH; ++j) {
           const currpt = [xmin + j / WIDTH * (xmax - xmin), ymin + i / HEIGHT * (ymax - ymin)];
-          let zpt = [0.0, 0.0];
+          let zpt = [0, 0];
           let valid = true;
           let endk = -1;
-          const MAX_IT = 100;
+          const MAX_IT = 120;
           for (let k = 0; k < MAX_IT; ++k) {
             zpt = [zpt[0] * zpt[0] - zpt[1] * zpt[1] + currpt[0], 2 * zpt[0] * zpt[1] + currpt[1]];
-            if (zpt[0] * zpt[0] + zpt[1] * zpt[1] > 10.0) {
+            if (zpt[0] * zpt[0] + zpt[1] * zpt[1] > 1e6) {
               valid = false;
               endk = k;
               break;
@@ -49,7 +55,8 @@
             data[idx + 3] = 255;
           }
           else{
-            const color = hslToRgb(endk / MAX_IT * 360, 100, 50);
+            const smooth = Math.log(Math.log(zpt[0] * zpt[0] + zpt[1] * zpt[1]) / 2 / Math.log(2.0)) / Math.log(2.0);
+            const color = hslToRgb((endk + 1 - smooth) / MAX_IT * 360, 100, 50);
             data[idx] = color[0];
             data[idx + 1] = color[1];
             data[idx + 2] = color[2];
@@ -59,7 +66,7 @@
       }
       ctx.putImageData(imdata, 0, 0);
     }
-    draw(cx[0], cx[1], cy[0], cy[1]);
+    draw(p[0], p[1], q[0], q[1]);
     function getMousePos(evt) {
       var rect = canvas.getBoundingClientRect();
       return {
@@ -72,12 +79,12 @@
       const r = canvas.getBoundingClientRect();
       const pos = [e.clientX - r.left, e.clientY - r.top];
       const scrollamt = 1 + e.deltaY / 1000;
-      const truepos = [pos[0] / r.width * (cx[1] - cx[0]), pos[1] / r.height * (cy[1] - cy[0])];
-      cx = [cx[0] + truepos[0] - truepos[0] * scrollamt,
-      cx[0] + truepos[0] + (cx[1] - cx[0]) * scrollamt - truepos[0] * scrollamt];
-      cy = [cy[0] + truepos[1] - truepos[1] * scrollamt,
-      cy[0] + truepos[1] + (cy[1] - cy[0]) * scrollamt - truepos[1] * scrollamt];
-      draw(cx[0], cx[1], cy[0], cy[1]);
+      const truepos = [pos[0] / r.width * (p[1] - p[0]), pos[1] / r.height * (q[1] - q[0])];
+      p = [p[0] + truepos[0] - truepos[0] * scrollamt,
+      p[0] + truepos[0] + (p[1] - p[0]) * scrollamt - truepos[0] * scrollamt];
+      q = [q[0] + truepos[1] - truepos[1] * scrollamt,
+      q[0] + truepos[1] + (q[1] - q[0]) * scrollamt - truepos[1] * scrollamt];
+      draw(p[0], p[1], q[0], q[1]);
     }, { passive: false });
     let isdrag = false;
     let lastpos = { x: 0.0, y: 0.0 };
@@ -88,10 +95,10 @@
     canvas.addEventListener('mousemove', function (e) {
       if (isdrag) {
         const mouse = getMousePos(e);
-        cx = [cx[0] - (mouse.x - lastpos.x) / canvas.width * (cx[1] - cx[0]), cx[1] - (mouse.x - lastpos.x) / canvas.width * (cx[1] - cx[0])];
-        cy = [cy[0] - (mouse.y - lastpos.y) / canvas.height * (cy[1] - cy[0]), cy[1] - (mouse.y - lastpos.y) / canvas.height * (cy[1] - cy[0])];
+        p = [p[0] - (mouse.x - lastpos.x) / canvas.width * (p[1] - p[0]), p[1] - (mouse.x - lastpos.x) / canvas.width * (p[1] - p[0])];
+        q = [q[0] - (mouse.y - lastpos.y) / canvas.height * (q[1] - q[0]), q[1] - (mouse.y - lastpos.y) / canvas.height * (q[1] - q[0])];
         lastpos = mouse;
-        draw(cx[0], cx[1], cy[0], cy[1]);
+        draw(p[0], p[1], q[0], q[1]);
       }
     })
     canvas.addEventListener('mouseup', () => { isdrag = false });
