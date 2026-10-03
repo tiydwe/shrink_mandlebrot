@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Mandelbrot viewer</title>
+</head>
+
+<body>
+  <button onclick="_a()">Reset zoom</button><br>
+  <small>Click + drag to pan, scroll to zoom</small><br>
+  <div>
+    <label for=_b>Precision: </label>
+    <input type=range id=_b min=10 max=200 value=120><br>
+    <p><span id="_c">120</span> iterations</p>
+  </div><br>
+  <canvas id="mc" width=600 height=500 style="border: 3px solid black;"></canvas><br>
+  <small><a href="https://github.com/tiydwe/shrink_mandlebrot">Github Repo</a></small>
+  <script>
+    let p = [-1.9, 0.5];
+    let q = [-1, 1];
+    function _a() {
+      p = [-1.9, 0.5];
+      q = [-1, 1];
+      draw(p[0], p[1], q[0], q[1]);
+    }
+    let _e = Math;
+    function _d(h, s, l) {
+      s /= 100;
+      l /= 100;
+      const k = n => (n + h / 30) % 12;
+      const a = s * _e.min(l, 1 - l);
+      const f = n => l - a * _e.max(-1, _e.min(k(n) - 3, _e.min(9 - k(n), 1)));
+      return [_e.round(255 * f(0)), _e.round(255 * f(8)), _e.round(255 * f(4))];
+    }
+    const canvas = document.getElementById('mc');
+    const ctx = canvas.getContext('2d');
+    let _m = 120;
+    function draw(xmin, xmax, ymin, ymax) {
+      let _f = canvas.width, _g = canvas.height;
+      let _h = ctx.createImageData(_e.floor(_f), _e.floor(_g));
+      let data = _h.data;
+      for (let i = 0; i < _g; ++i) {
+        for (let j = 0; j < _f; ++j) {
+          const _i = [xmin + j / _f * (xmax - xmin), ymin + i / _g * (ymax - ymin)];
+          let _j = [0, 0];
+          let _k = true;
+          let _l = -1;
+          for (let k = 0; k < _m; ++k) {
+            _j = [_j[0] * _j[0] - _j[1] * _j[1] + _i[0], 2 * _j[0] * _j[1] + _i[1]];
+            if (_j[0] * _j[0] + _j[1] * _j[1] > 1e6) {
+              _k = false;
+              _l = k;
+              break;
+            }
+          }
+          let idx = (i * _f + j) * 4;
+          if (_k) {
+            data[idx] = 0;
+            data[idx + 1] = 0;
+            data[idx + 2] = 0;
+            data[idx + 3] = 255;
+          }
+          else {
+            const smooth = _e.log(_e.log(_j[0] * _j[0] + _j[1] * _j[1]) / 2 / _e.log(2.0)) / _e.log(2.0);
+            const _n = _d((_l + 1 - smooth) / _m * 360, 100, 50);
+            data[idx] = _n[0];
+            data[idx + 1] = _n[1];
+            data[idx + 2] = _n[2];
+            data[idx + 3] = 255;
+          }
+        }
+      }
+      ctx.putImageData(_h, 0, 0);
+    }
+    draw(p[0], p[1], q[0], q[1]);
+    function _o(evt) {
+      var rect = canvas.getBoundingClientRect();
+      return {
+        x: evt.clientX - rect.left,
+        y: evt.clientY - rect.top
+      };
+    }
+    canvas.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      const r = canvas.getBoundingClientRect();
+      const pos = [e.clientX - r.left, e.clientY - r.top];
+      const _p = 1 + e.deltaY / 1000;
+      const _q = [pos[0] / r.width * (p[1] - p[0]), pos[1] / r.height * (q[1] - q[0])];
+      p = [p[0] + _q[0] - _q[0] * _p,
+      p[0] + _q[0] + (p[1] - p[0]) * _p - _q[0] * _p];
+      q = [q[0] + _q[1] - _q[1] * _p,
+      q[0] + _q[1] + (q[1] - q[0]) * _p - _q[1] * _p];
+      draw(p[0], p[1], q[0], q[1]);
+    }, { passive: false });
+    let isdrag = false;
+    let lastpos = { x: 0.0, y: 0.0 };
+    canvas.addEventListener('mousedown', function (e) {
+      isdrag = true;
+      lastpos = _o(e);
+    });
+    canvas.addEventListener('mousemove', function (e) {
+      if (isdrag) {
+        const mouse = _o(e);
+        p = [p[0] - (mouse.x - lastpos.x) / canvas.width * (p[1] - p[0]), p[1] - (mouse.x - lastpos.x) / canvas.width * (p[1] - p[0])];
+        q = [q[0] - (mouse.y - lastpos.y) / canvas.height * (q[1] - q[0]), q[1] - (mouse.y - lastpos.y) / canvas.height * (q[1] - q[0])];
+        lastpos = mouse;
+        draw(p[0], p[1], q[0], q[1]);
+      }
+    })
+    canvas.addEventListener('mouseup', () => { isdrag = false });
+    canvas.addEventListener('mouseleave', () => { isdrag = false });
+
+    document.getElementById("_b").addEventListener('input', function () {
+      document.getElementById("_c").textContent = this.value;
+      _m = this.value;
+      draw(p[0], p[1], q[0], q[1]);
+    })
+  </script>
+</body>
+
+</html>

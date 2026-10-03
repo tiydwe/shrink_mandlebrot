@@ -8,12 +8,17 @@
 <body>
   <button onclick="reset()">Reset zoom</button><br>
   <small>Click + drag to pan, scroll to zoom</small><br>
+  <div>
+    <label for=psli>Precision: </label>
+    <input type=range id=psli min=10 max=200 value=120><br>
+    <p><span id="pval">120</span> iterations</p>
+  </div><br>
   <canvas id="mc" width=600 height=500 style="border: 3px solid black;"></canvas><br>
   <small><a href="https://github.com/tiydwe/shrink_mandlebrot">Github Repo</a></small>
   <script>
     let p = [-1.9, 0.5];
     let q = [-1, 1];
-    function reset(){
+    function reset() {
       p = [-1.9, 0.5];
       q = [-1, 1];
       draw(p[0], p[1], q[0], q[1]);
@@ -28,8 +33,9 @@
     }
     const canvas = document.getElementById('mc');
     const ctx = canvas.getContext('2d');
+    let MAX_IT = 120;
     function draw(xmin, xmax, ymin, ymax) {
-      let WIDTH = canvas.width,HEIGHT = canvas.height;
+      let WIDTH = canvas.width, HEIGHT = canvas.height;
       let imdata = ctx.createImageData(Math.floor(WIDTH), Math.floor(HEIGHT));
       let data = imdata.data;
       for (let i = 0; i < HEIGHT; ++i) {
@@ -38,7 +44,6 @@
           let zpt = [0, 0];
           let valid = true;
           let endk = -1;
-          const MAX_IT = 120;
           for (let k = 0; k < MAX_IT; ++k) {
             zpt = [zpt[0] * zpt[0] - zpt[1] * zpt[1] + currpt[0], 2 * zpt[0] * zpt[1] + currpt[1]];
             if (zpt[0] * zpt[0] + zpt[1] * zpt[1] > 1e6) {
@@ -54,7 +59,7 @@
             data[idx + 2] = 0;
             data[idx + 3] = 255;
           }
-          else{
+          else {
             const smooth = Math.log(Math.log(zpt[0] * zpt[0] + zpt[1] * zpt[1]) / 2 / Math.log(2.0)) / Math.log(2.0);
             const color = hslToRgb((endk + 1 - smooth) / MAX_IT * 360, 100, 50);
             data[idx] = color[0];
@@ -103,6 +108,12 @@
     })
     canvas.addEventListener('mouseup', () => { isdrag = false });
     canvas.addEventListener('mouseleave', () => { isdrag = false });
+
+    document.getElementById("psli").addEventListener('input', function () {
+      document.getElementById("pval").textContent = this.value;
+      MAX_IT = this.value;
+      draw(p[0], p[1], q[0], q[1]);
+    })
   </script>
 </body>
 
